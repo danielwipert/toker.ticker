@@ -1,0 +1,252 @@
+**CHORUS AI SYSTEMS**
+
+**TokenTicker**
+
+**Specification Amendment v4.2**
+
+*Amends the current locked specification. Each item states the prior position and the replacement. Merge into the master spec at next revision.*
+
+**July 2026 • Daniel Wipert**
+
+---
+
+## Summary
+
+Fourteen amendments across three areas: **interface** (single view replaces the two-view split), **capability sourcing** (the Artificial Analysis dependency is now treated as unsafe and the owned battery moves into MVP), and **battery design** (grading, task generation, cadence, and listing criteria locked).
+
+The load-bearing change is A5. The prior spec sourced five of eight front-page columns from Artificial Analysis, including the hero metric. That dependency is no longer treated as acceptable for MVP.
+
+---
+
+## Part I — Interface
+
+### A1. Single unified view
+
+**Was:** Two views. Manager view default, Analyst view behind a toggle.
+
+**Now:** One view. All Tier A metrics on the home page, every column sortable. Manager visual language retained; Analyst dark theme removed entirely.
+
+**Tier A columns (8):**
+
+| # | Column | Contents |
+|---|---|---|
+| 1 | Model | Name, provider, ticker, OPEN badge, rating signal bar on row edge |
+| 2 | Cost to run a task | Hero. Blended $/M as subline. Clay treatment when sticker price inverts against run cost |
+| 3 | Capability | Score + bar |
+| 4 | Elo | Chat Elo |
+| 5 | Speed | tokens/sec |
+| 6 | Context | Context window |
+| 7 | Rating | Efficient / Premium / Commodity / Overpriced, plus dominated-by or specialist annotation |
+| 8 | Confidence · Updated | Confidence dot + data age |
+
+**Tier B — moved to the model detail page, not a column picker:** input $/M, output $/M, time to first token, modality, license, full per-host price spread with qualification status, source links, coding and reasoning scores.
+
+**Rationale:** A column picker builds a second table inside the first. A detail page gives Tier B room to be explained rather than merely listed.
+
+**Density consequence:** eight columns do not fit at the prior Manager row padding. Row padding reduces to 13px, container widens to 1240px, secondary numerics render in mono.
+
+### A2. Model detail page and peer rule
+
+**New.** Each model has a detail page reached by clicking its row.
+
+**Peer set is defined as models within ±5 capability points of the subject**, excluding the subject, sorted ascending by cost per task.
+
+- Subject row highlighted in slate; any peer that is both cheaper **and** equal-or-better on capability highlighted in teal.
+- Peer rows are navigable — clicking one opens that model's detail page.
+- The frontier chart on the detail page renders the ±5 band as a shaded horizontal strip. Anything inside the strip and to the left is a cheaper substitute at comparable quality.
+
+**Empty-band case:** where no model falls within ±5, the page states that the model has no direct substitute at its quality level rather than widening the band silently.
+
+### A3. Rating engine reads axes that are not published
+
+**Clarifies the v4.1 per-axis domination fix.**
+
+Coding and reasoning are removed from the home table (A1) but **remain in the model record and remain inside the domination test.** A challenger must match or beat the subject on every axis held in data, not merely on published axes.
+
+**Reason:** narrowing the domination test to displayed axes reopens the specialist mislabel defect that v4.1 closed. A coding specialist with a modest overall score would again be flagged Overpriced.
+
+**Rule:** the rating engine's axis set is a property of the data model, not of the view.
+
+---
+
+## Part II — Sourcing
+
+### A4. Capability sourcing remains unresolved
+
+**Status: open. Phase 0 gate.**
+
+| Axis | Source | Status |
+|---|---|---|
+| Chat Elo | LMArena | **Confirmed** — published openly |
+| Capability (overall) | — | **Unconfirmed** |
+| Coding | — | **Unconfirmed** |
+| Reasoning | — | **Unconfirmed** |
+| Context window | Model cards | Confirmed |
+
+The prior spec sourced overall, coding, and reasoning from Artificial Analysis. Public redistribution of those indices appears to require licensing beyond the self-serve tier. This has not been formally verified and remains a gate.
+
+**Constraint retained from prior spec:** TokenTicker does not construct its own blended capability index from component benchmark scores. Doing so would make a derived number wear the costume of an observed one. Capability is either sourced with attribution or it is not published.
+
+### A5. Owned task battery moves from fast-follow to MVP-critical
+
+**Was:** owned battery scheduled as a post-MVP replacement for the Artificial Analysis cost feed.
+
+**Now:** MVP-critical.
+
+**Reason:** the Artificial Analysis dependency covers five of eight Tier A columns — cost per task, capability, coding, reasoning, and speed. Cost per task is the hero metric and the entire positioning claim. A product whose central differentiator is a borrowed number under uncertain license is not shippable.
+
+**Secondary effect, and it is favourable:** building the battery first means TokenTicker ships as a measurement source rather than an aggregator with a better frame. There is no dependency to disclose and no terms to renegotiate.
+
+---
+
+## Part III — Battery design
+
+### A6. Grading — deterministic first
+
+**Was:** generator-verifier, one model judging another.
+
+**Now:**
+
+| Category | Grading | Mechanism |
+|---|---|---|
+| Coding | Deterministic | Unit test suite exit code |
+| Extraction | Deterministic | Exact match against planted ground truth |
+| Reasoning | Deterministic | Verifiable final answer |
+| Long-context Q&A | Deterministic | Exact span or fact match at known location |
+| Summarization | Panel | Three distinct model families, majority vote |
+
+**Task admission rule:** a proposed task that cannot be graded deterministically does not enter a deterministic category. Verifiability is a design constraint on task authoring, not a property discovered afterward.
+
+**Panel specification** (applies when summarization enters scope): three model families from the Chorus reference stack, never fine-tunes of one family. Unanimous verdict carries full confidence; a 2–1 split records the majority verdict with a flag and degraded confidence. Python does not judge quality but verifies all three judges returned schema-valid verdicts. One judge failing degrades the panel to two at an explicit level; two failing returns `None` for the category rather than a guess.
+
+**MVP consequence:** with summarization deferred (A7), **no LLM appears anywhere in the MVP grading path.** Every published number is measured or computed by Python.
+
+### A7. MVP battery scope — three categories
+
+**Was:** five categories at MVP — coding, reasoning, extraction, summarization, long-context Q&A.
+
+**Now, at MVP:** coding, extraction, reasoning.
+
+**Deferred:** summarization (requires the judge panel), long-context Q&A (dominant cost driver — 100K input tokens per call per model, estimated 60–80% of a five-category sweep).
+
+**Headline metric amended:** cost per task at MVP is the equal-weighted mean of **three** category values. The five-category mean returns when categories four and five ship. Category count remains in configuration; the rollup reads the configured set rather than a hardcoded five.
+
+**Disclosure requirement:** the site states which categories are in the current suite. A three-category mean must not be presented as if it were five.
+
+### A8. Task content — procedural generation
+
+**Was:** undefined; task authoring deferred.
+
+**Now:** TokenTicker publishes the **task generator and the grading code**, not the task instances. Each snapshot generates fresh instances from a published seed.
+
+| Category | Generator emits | Ground truth from |
+|---|---|---|
+| Coding | Function spec from template grammar — randomized data shapes, edge cases, constraints | Unit tests emitted by the same generator |
+| Extraction | Synthetic structured documents with planted field values | Generation parameters |
+| Reasoning | Multi-step problems with computed answers — constraint satisfaction, scheduling, arithmetic chains | Solved by the generator |
+| Long-context Q&A *(deferred)* | Assembled documents with a fact planted at known depth | The planted fact |
+| Summarization *(deferred)* | Not generated — sources drawn from a recent public feed | Panel judgment |
+
+**Contamination posture:** published instances enter training data and decay. Published *generators* do not — instances are new each snapshot. Summarization, which cannot be procedurally generated, obtains contamination resistance from source recency instead: documents published after model training cutoffs cannot be memorized.
+
+**Reproducibility:** any third party can reproduce any published snapshot from the seed, the generator, and the grading code. This is a stronger claim than a fixed public suite and strictly stronger than a private holdout.
+
+**Accepted cost:** fresh instances introduce run-to-run variance in both success rate and cost per task. Mitigations — hold task size approximately constant across instances via generator parameter bounds; publish seeds; size the suite so instance variance averages down; report intervals rather than false point estimates, consistent with the existing epistemics rule governing Elo presentation.
+
+### A9. Variance and repeat policy — calibration-derived
+
+**Was:** unspecified.
+
+**Now:** the repeat count N is **not locked by specification.** It is set from measurement.
+
+A calibration study measures the actual spread of token consumption and pass rate across procedurally generated instances. N is chosen so cost per task falls within a stated tolerance. See the calibration build plan.
+
+**Rationale:** N is an empirical quantity with a cheap answer. Specifying it in advance would be guessing at a number that can be measured for a few dollars.
+
+### A10. Token accounting
+
+**Locked:** provider-reported usage from the inference API response.
+
+**Reason:** reasoning models bill for thinking tokens that never appear in visible output. A local tokenizer cannot count them. Local counting would systematically understate exactly the models TokenTicker exists to expose.
+
+**Two deterministic checks in Python, since the count is not independently verifiable:**
+
+1. **Independent cost recomputation** — `tokens × published price`. A provider-supplied cost field is never trusted or displayed.
+2. **Bound check** — reported output tokens must not fall below a local tokenizer count of the visible text. A violation flags the row rather than silently passing.
+
+The count itself cannot be verified. That it is not impossible can be, and the arithmetic on top of it is owned.
+
+### A11. Cost architecture — measurement decoupled from pricing
+
+**New, and it is the primary cost control.**
+
+```
+$/task  =  cached measured tokens  ×  current published price
+           └── expensive, changes    └── free to scrape,
+               only on new snapshot      changes frequently
+```
+
+Token consumption is a property of a model snapshot and does not drift between runs. Price changes far more often and costs nothing to check.
+
+**Therefore:** token profiles are measured rarely and cached; prices refresh daily; cost per task recomputes daily against fresh prices at zero inference cost.
+
+**Effect:** the hero metric updates daily while the battery runs monthly.
+
+### A12. Cadence and snapshot pinning
+
+**Locked:**
+
+- **Monthly** re-run per listed model
+- **Immediate** run on any new model or new snapshot
+- **Pinned snapshots only.** The roster addresses versioned identifiers, never moving aliases.
+
+**Reason for pinning:** providers re-point aliases and alter serving configuration — quantization, speculative decoding — without version bumps. Pinning makes "a model is a model" true by construction rather than by assumption.
+
+**Reframing of the monthly run:** it is not data freshening. It is **drift detection.** The expectation is that a pinned snapshot's numbers do not move. If they do, that is a publishable finding — a silent change in cost or capability under a stable version identifier is precisely the class of event TokenTicker is architecturally positioned to catch and nobody else is watching for.
+
+### A13. Listing criteria
+
+**New.** Roster membership is determined by objective gates plus a bounded cap, so exclusion has an answer that is not taste.
+
+**Hard gates — all must pass:**
+
+1. **Callable** through the configured inference route. Unmeasurable models are unlistable.
+2. **Pinned snapshot identifier exists.** Excludes moving aliases.
+3. **Public per-token pricing.** No quote-gated models. Their exclusion is itself a stated position.
+4. **Present on LMArena.** Serves twice — supplies the only confirmed-source capability axis, and proxies for sufficient interest to have been evaluated.
+5. **Currently served**, not deprecated.
+
+**Caps:**
+
+- Maximum **3 models per provider** — prevents a single vendor dominating the roster and preserves frontier legibility
+- Overall cap approximately **25**, ranked by Elo
+
+**Known hazard:** ranking purely by Elo and truncating produces a roster of frontier models with no commodity end, which removes the shape from the frontier chart. The per-provider cap is expected to mitigate this, since most providers ship a small model alongside a large one. If it proves insufficient, reserve slots across capability bands.
+
+---
+
+## Part IV — Consequences flagged, not decided
+
+### A14. Success rate arrives at MVP
+
+The prior spec set `success_rate = None` at MVP because the external cost feed did not supply it, and deferred cost-per-successful-task to V2.
+
+The owned battery measures success rate from the first run. The original objection to cost-per-successful-task — that it rested on a benchmark score standing in for a success probability — does not apply to a directly measured rate.
+
+**Therefore cost-per-successful-task is legitimately available at MVP.** Whether to publish it is undecided.
+
+**Argument for publishing it early:** deterministic grading exposes a perverse incentive in cost per task. A model that fails quickly consumes few tokens and therefore appears cheap. Pairing cost with capability on the frontier partially covers this; cost-per-successful-task addresses it directly.
+
+### Open items
+
+| # | Item | Blocks |
+|---|---|---|
+| 1 | Capability source for overall, coding, reasoning | The Capability column shipping with provenance |
+| 2 | Whether to publish cost-per-successful-task at MVP | Nothing — additive |
+| 3 | Suite pass rate as an owned capability axis. Likely to show ceiling effects at 9–12 tasks, since a suite designed to measure cost need not discriminate capability. Would require difficulty-calibrated task generation | Independence from external capability sources |
+| 4 | Long-context Q&A and summarization re-entry | Five-category headline mean |
+| 5 | Capability-band slot reservation if the per-provider cap proves insufficient | Frontier chart legibility at full roster |
+
+---
+
+*End of amendment v4.2.*

@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TokenTicker — prototype v3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F5F7FA; --card:#FFFFFF; --ink:#0F2438; --muted:#5C6E80; --faint:#95A3B3;
+    --line:#EAEEF3; --line2:#F1F4F8; --hover:#FBFCFE;
+    --teal:#0E9A86; --teal-soft:#E4F4F0;
+    --amber:#B57A16; --amber-soft:#F9F0DC;
+    --clay:#B24734; --clay-soft:#F8E7E2;
+    --slate:#5E7288; --slate-soft:#EDF1F5;
+    --dotHigh:#1BA672; --dotMed:#D9902B;
+    --disp:'Jost',-apple-system,BlinkMacSystemFont,sans-serif;
+    --mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1240px;margin:0 auto;padding:0 26px}
+
+  /* ---------- header ---------- */
+  header{padding:28px 0 0}
+  .head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap}
+  .logo{font-family:var(--disp);font-weight:700;font-size:28px;letter-spacing:-.02em;line-height:1;cursor:pointer}
+  .logo b{color:var(--teal);font-weight:700}
+  .kick{font-family:var(--disp);font-weight:500;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);margin-top:7px}
+  .tagline{font-family:var(--disp);font-weight:400;font-size:16px;color:var(--muted);max-width:340px;text-align:right;line-height:1.4}
+  .tagline b{color:var(--ink);font-weight:500}
+  .rule{height:3px;background:var(--teal);width:52px;margin:18px 0 0;border-radius:2px}
+
+  /* ---------- summary strip ---------- */
+  #summary{display:flex;gap:34px;padding:20px 0 2px;flex-wrap:wrap}
+  .stat .k{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--faint);font-weight:600}
+  .stat .v{font-family:var(--disp);font-weight:600;font-size:16px;margin-top:3px}
+  .stat .v small{font-weight:400;color:var(--muted);font-size:12.5px;font-family:var(--sans)}
+
+  /* ---------- toolbar ---------- */
+  .bar{display:flex;align-items:center;gap:10px;padding:22px 0 12px;flex-wrap:wrap}
+  .search{position:relative;flex:1;min-width:190px;max-width:340px}
+  .search input{width:100%;padding:9px 13px 9px 34px;border:1px solid var(--line);border-radius:22px;font-family:var(--sans);font-size:14px;background:var(--card);color:var(--ink)}
+  .search input:focus{outline:2px solid var(--teal);border-color:transparent}
+  .search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--faint)}
+  .chip{font-size:13.5px;padding:8px 15px;border-radius:20px;border:1px solid var(--line);background:var(--card);color:var(--muted);cursor:pointer;font-family:var(--sans)}
+  .chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+  .chip:focus-visible{outline:2px solid var(--teal);outline-offset:1px}
+  .spacer{flex:1}
+  .ghost{font-size:13px;color:var(--teal);background:none;border:1px solid var(--line);border-radius:20px;padding:8px 15px;cursor:pointer;font-weight:600;font-family:var(--sans)}
+  .ghost:focus-visible{outline:2px solid var(--teal);outline-offset:1px}
+
+  /* ---------- table ---------- */
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .scroll{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+  thead th{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);font-weight:600;
+    text-align:right;padding:15px 12px 10px;white-space:nowrap;cursor:pointer;border-bottom:1px solid var(--line)}
+  thead th.l{text-align:left;padding-left:19px}
+  thead th:hover{color:var(--muted)}
+  thead th:focus-visible{outline:2px solid var(--teal);outline-offset:-2px}
+  tbody td{padding:13px 12px;border-top:1px solid var(--line2);text-align:right;vertical-align:middle;white-space:nowrap}
+  tbody td.l{text-align:left;padding-left:19px;position:relative}
+  tbody tr{cursor:pointer;transition:background .13s ease}
+  tbody tr:hover{background:var(--hover)}
+  tbody tr:focus-visible{outline:2px solid var(--teal);outline-offset:-2px}
+  .arrow{color:var(--teal);font-size:9px;margin-left:3px}
+
+  .sig{position:absolute;left:0;top:0;bottom:0;width:3px}
+  .sig.Efficient{background:var(--teal)} .sig.Premium{background:var(--amber)}
+  .sig.Commodity{background:var(--slate)} .sig.Overpriced{background:var(--clay)}
+
+  .nm{font-family:var(--disp);font-weight:600;font-size:15.5px;letter-spacing:-.01em}
+  .pr{font-size:11.5px;color:var(--faint);margin-top:2px}
+  .pr .tk{font-family:var(--mono);color:var(--teal);font-size:10.5px}
+  .open{font-size:9.5px;color:var(--teal);background:var(--teal-soft);border-radius:4px;padding:2px 5px;margin-left:7px;font-weight:600;vertical-align:2px;letter-spacing:.04em}
+
+  .cost{font-family:var(--disp);font-weight:600;font-size:21px;letter-spacing:-.02em;color:var(--ink)}
+  .cost .u{font-family:var(--sans);font-size:10.5px;color:var(--faint);font-weight:400;letter-spacing:0}
+  .costsub{font-family:var(--mono);font-size:11px;color:var(--faint);margin-top:2px}
+  .costsub.invert{color:var(--clay)}
+
+  .capw{display:inline-flex;flex-direction:column;align-items:flex-end;gap:4px}
+  .capnum{font-family:var(--disp);font-weight:500;font-size:15px}
+  .capbar{width:54px;height:4px;background:var(--slate-soft);border-radius:2px;overflow:hidden}
+  .capbar i{display:block;height:100%;background:var(--ink)}
+  .num{font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+  .num .un{color:var(--faint);font-size:10px}
+
+  .tag{font-size:12px;font-weight:600;padding:4px 11px;border-radius:20px;display:inline-block;white-space:nowrap}
+  .tag.Efficient{color:var(--teal);background:var(--teal-soft)}
+  .tag.Premium{color:var(--amber);background:var(--amber-soft)}
+  .tag.Commodity{color:var(--slate);background:var(--slate-soft)}
+  .tag.Overpriced{color:var(--clay);background:var(--clay-soft)}
+  .spec{display:block;font-size:10.5px;color:var(--faint);margin-top:4px;font-weight:500}
+
+  .trust{display:inline-flex;align-items:center;gap:10px;justify-content:flex-end}
+  .conf{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--muted)}
+  .dot{width:7px;height:7px;border-radius:50%}
+  .dot.high{background:var(--dotHigh)} .dot.med{background:var(--dotMed)}
+  .age{font-size:11.5px;color:var(--faint);font-family:var(--mono)} .age.stale{color:var(--clay)}
+
+  .count{font-size:12.5px;color:var(--faint);padding:12px 2px 0}
+
+  /* ---------- frontier ---------- */
+  #frontierWrap{margin-top:16px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+  .fhead{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:4px;flex-wrap:wrap}
+  .fhead h3{font-family:var(--disp);font-weight:600;font-size:15px;margin:0}
+  .fhead .hint{font-size:12px;color:var(--faint)}
+  .ftoggle{font-size:12.5px;color:var(--teal);background:none;border:0;cursor:pointer;font-weight:600;font-family:var(--sans)}
+  .ftoggle:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+  #fpanel{display:none;margin-top:8px} #fpanel.show{display:block}
+  .gridtxt{font-family:var(--mono);font-size:10px;fill:var(--faint)}
+  .axlabel{font-family:var(--mono);font-size:10px;fill:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+  .dotname{font-family:var(--sans);font-size:10px;fill:var(--muted)}
+  .dotname.me{fill:var(--ink);font-weight:700}
+
+  /* ---------- detail page ---------- */
+  #detail{display:none}
+  body.detail #list{display:none}
+  body.detail #detail{display:block}
+  body.detail #summary{display:none}
+  .back{font-size:13.5px;color:var(--teal);background:none;border:0;cursor:pointer;font-weight:600;padding:20px 0 0;font-family:var(--sans)}
+  .back:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+  .dhead{display:flex;align-items:flex-start;justify-content:space-between;gap:22px;flex-wrap:wrap;padding:12px 0 20px;border-bottom:1px solid var(--line)}
+  .dtitle{font-family:var(--disp);font-weight:600;font-size:32px;letter-spacing:-.025em;line-height:1.1}
+  .dsub{font-size:13px;color:var(--faint);margin-top:6px}
+  .dsub .tk{font-family:var(--mono);color:var(--teal);font-size:12px}
+  .dverdict{max-width:420px;text-align:right}
+  .dverdict p{font-size:13.5px;color:var(--muted);line-height:1.5;margin:9px 0 0}
+
+  .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;padding:22px 0}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:15px 17px}
+  .kpi .k{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);font-weight:600}
+  .kpi .v{font-family:var(--disp);font-weight:600;font-size:27px;letter-spacing:-.025em;margin-top:7px;line-height:1}
+  .kpi .v span{font-family:var(--sans);font-size:11px;color:var(--faint);font-weight:400;letter-spacing:0}
+  .kpi .s{font-family:var(--mono);font-size:11px;color:var(--faint);margin-top:6px}
+  .kpi .s.invert{color:var(--clay)}
+
+  .panels{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:17px 19px}
+  .panel h4{font-family:var(--disp);font-weight:600;font-size:14px;margin:0 0 3px}
+  .panel .note{font-size:11.5px;color:var(--faint);margin-bottom:13px}
+  .kv{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:8px 0;border-top:1px solid var(--line2);font-size:13.5px}
+  .kv:first-of-type{border-top:0}
+  .kv .kk{color:var(--muted)}
+  .kv .vv{font-family:var(--mono);font-size:13px}
+  .kv .vv.cheapest{color:var(--teal);font-weight:600}
+  .kv .vv.dq{color:var(--faint);text-decoration:line-through}
+  .kv .hostmeta{font-size:10.5px;color:var(--faint);font-family:var(--sans);margin-left:7px;text-decoration:none;display:inline-block}
+  .axis{display:flex;align-items:center;gap:11px;padding:8px 0;border-top:1px solid var(--line2)}
+  .axis:first-of-type{border-top:0}
+  .axis .an{flex:1;color:var(--muted);font-size:13.5px}
+  .axis .ab{width:110px;height:5px;background:var(--slate-soft);border-radius:3px;overflow:hidden}
+  .axis .ab i{display:block;height:100%;background:var(--ink)}
+  .axis .ab i.hi{background:var(--teal)}
+  .axis .av{font-family:var(--mono);font-size:13px;width:38px;text-align:right}
+  .unsourced{font-size:11.5px;color:var(--amber);background:var(--amber-soft);border-radius:6px;padding:8px 11px;margin-top:13px;line-height:1.45}
+
+  .peers{margin-top:14px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:17px 19px 6px}
+  .peers h4{font-family:var(--disp);font-weight:600;font-size:14px;margin:0 0 3px}
+  .peers .note{font-size:12.5px;color:var(--muted);margin-bottom:12px;line-height:1.5}
+  .peers .note b{color:var(--ink);font-weight:600}
+  .ptable{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+  .ptable th{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);font-weight:600;text-align:right;padding:0 10px 9px;border-bottom:1px solid var(--line)}
+  .ptable th.l{text-align:left;padding-left:0}
+  .ptable td{padding:11px 10px;border-top:1px solid var(--line2);text-align:right;white-space:nowrap}
+  .ptable td.l{text-align:left;padding-left:0}
+  .ptable tr.me{background:var(--slate-soft)}
+  .ptable tr.beats td{background:var(--teal-soft)}
+  .ptable .pn{font-family:var(--disp);font-weight:600;font-size:14px}
+  .ptable .pn .mine{font-size:9.5px;color:var(--faint);letter-spacing:.08em;text-transform:uppercase;margin-left:8px;font-weight:600}
+  .delta{font-family:var(--mono);font-size:11px;color:var(--faint);margin-left:6px}
+  .delta.up{color:var(--teal)} .delta.dn{color:var(--clay)}
+  .empty{font-size:13.5px;color:var(--muted);padding:4px 0 16px}
+
+  footer{padding:20px 2px 46px;color:var(--faint);font-size:12.5px;line-height:1.6}
+  footer b{color:var(--muted);font-weight:600}
+
+  @media(max-width:900px){
+    .cards{grid-template-columns:repeat(2,1fr)}
+    .panels{grid-template-columns:1fr}
+    .dverdict{text-align:left;max-width:none}
+  }
+  @media(max-width:620px){
+    .capbar{display:none}.tagline{display:none}.cost{font-size:18px}
+    .cards{grid-template-columns:1fr}.dtitle{font-size:26px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="head">
+      <div>
+        <div class="logo" id="logo" role="button" tabindex="0">Token<b>Ticker</b></div>
+        <div class="kick">Chorus AI Systems</div>
+      </div>
+      <div class="tagline">What each model actually costs to <b>do the job</b> — measured, not borrowed.</div>
+    </div>
+    <div class="rule"></div>
+  </header>
+
+  <div id="summary"></div>
+
+  <!-- ============ LIST ============ -->
+  <section id="list">
+    <div class="bar">
+      <div class="search">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+        <input id="search" type="text" placeholder="Search models or providers…" aria-label="Search models">
+      </div>
+      <button class="chip" data-filter="all" aria-pressed="true">All</button>
+      <button class="chip" data-filter="open" aria-pressed="false">Open</button>
+      <button class="chip" data-filter="prop" aria-pressed="false">Proprietary</button>
+      <span class="spacer"></span>
+    </div>
+
+    <div class="card"><div class="scroll">
+      <table><thead id="thead"></thead><tbody id="tbody"></tbody></table>
+    </div></div>
+    <div class="count" id="count"></div>
+
+    <div id="frontierWrap">
+      <div class="fhead">
+        <div>
+          <h3>Cost–capability frontier</h3>
+          <span class="hint">Left is cheaper · up is more capable · the efficient edge is the frontier</span>
+        </div>
+        <button class="ftoggle" id="ftoggle" aria-expanded="false">Show chart ▾</button>
+      </div>
+      <div id="fpanel"></div>
+    </div>
+  </section>
+
+  <!-- ============ DETAIL ============ -->
+  <section id="detail"></section>
+
+  <footer>
+    <b>Prototype v3.</b> Illustrative sample data — not live measurements. Ratings and peer bands are computed live from the domination rule in spec §6.3, so they respond to the data.<br>
+    Capability source is unconfirmed pending Phase 0. Coding and reasoning are held in the data and drive the rating engine, but are not published as columns until sourced.
+  </footer>
+</div>
+
+<script>
+/* ---------------- sample data ---------------- */
+const MODELS=[
+ {name:"Aurora Max",prov:"Northwind",tk:"NWD:AURORA-MAX",open:false,task:4.80,blend:9.20,inp:6.00,outp:18.0,
+  cap:93,code:91,reason:94,elo:1412,tps:78,ttft:0.62,ctx:"200K",modality:"Text · Image",lic:"Proprietary",conf:"high",days:1,
+  hosts:[{h:"Northwind (owner)",inp:6.00,outp:18.0,ctx:"200K",var:"full"}]},
+ {name:"Aurora Flash",prov:"Northwind",tk:"NWD:AURORA-FLASH",open:false,task:0.90,blend:1.65,inp:1.00,outp:3.10,
+  cap:85,code:84,reason:83,elo:1358,tps:185,ttft:0.28,ctx:"128K",modality:"Text · Image",lic:"Proprietary",conf:"high",days:1,
+  hosts:[{h:"Northwind (owner)",inp:1.00,outp:3.10,ctx:"128K",var:"full"}]},
+ {name:"Zenith Pro",prov:"Solace",tk:"SOL:ZENITH-PRO",open:false,task:5.60,blend:10.5,inp:7.00,outp:21.0,
+  cap:87,code:86,reason:89,elo:1392,tps:65,ttft:0.71,ctx:"128K",modality:"Text",lic:"Proprietary",conf:"high",days:2,
+  hosts:[{h:"Solace (owner)",inp:7.00,outp:21.0,ctx:"128K",var:"full"}]},
+ {name:"Zenith Mini",prov:"Solace",tk:"SOL:ZENITH-MINI",open:false,task:0.07,blend:0.13,inp:0.08,outp:0.24,
+  cap:58,code:56,reason:54,elo:1235,tps:230,ttft:0.19,ctx:"64K",modality:"Text",lic:"Proprietary",conf:"high",days:3,
+  hosts:[{h:"Solace (owner)",inp:0.08,outp:0.24,ctx:"64K",var:"full"}]},
+ {name:"Nimbus Air",prov:"Cirrus",tk:"CIR:NIMBUS-AIR",open:false,task:1.30,blend:2.35,inp:1.45,outp:4.35,
+  cap:88,code:86,reason:88,elo:1372,tps:120,ttft:0.34,ctx:"1M",modality:"Text · Image · Audio",lic:"Proprietary",conf:"high",days:1,
+  hosts:[{h:"Cirrus (owner)",inp:1.45,outp:4.35,ctx:"1M",var:"full"}]},
+ {name:"Nimbus Nano",prov:"Cirrus",tk:"CIR:NIMBUS-NANO",open:false,task:0.04,blend:0.08,inp:0.05,outp:0.15,
+  cap:52,code:50,reason:47,elo:1155,tps:430,ttft:0.11,ctx:"32K",modality:"Text",lic:"Proprietary",conf:"high",days:1,
+  hosts:[{h:"Cirrus (owner)",inp:0.05,outp:0.15,ctx:"32K",var:"full"}]},
+ {name:"Ember Code",prov:"Forge",tk:"FRG:EMBER-CODE",open:false,task:0.30,blend:0.56,inp:0.34,outp:1.02,
+  cap:78,code:92,reason:70,elo:1305,tps:160,ttft:0.22,ctx:"64K",modality:"Text",lic:"Proprietary",conf:"med",days:2,
+  hosts:[{h:"Forge (owner)",inp:0.34,outp:1.02,ctx:"64K",var:"full"}]},
+ {name:"Vicuna-Nine 70B",prov:"OpenForge",tk:"OPF:VICUNA9-70B",open:true,task:0.22,blend:0.41,inp:0.25,outp:0.75,
+  cap:76,code:77,reason:72,elo:1302,tps:235,ttft:0.18,ctx:"128K",modality:"Text",lic:"Apache 2.0",conf:"med",days:1,
+  hosts:[{h:"Lattice Compute",inp:0.25,outp:0.75,ctx:"128K",var:"full"},
+         {h:"Beacon Host",inp:0.28,outp:0.82,ctx:"128K",var:"full"},
+         {h:"Northgate",inp:0.31,outp:0.95,ctx:"128K",var:"full"},
+         {h:"QuickServe",inp:0.19,outp:0.58,ctx:"32K",var:"quantized"}]},
+ {name:"Vicuna-Nine 8B",prov:"OpenForge",tk:"OPF:VICUNA9-8B",open:true,task:0.02,blend:0.04,inp:0.02,outp:0.07,
+  cap:50,code:49,reason:45,elo:1178,tps:490,ttft:0.09,ctx:"128K",modality:"Text",lic:"Apache 2.0",conf:"med",days:1,
+  hosts:[{h:"OpenForge",inp:0.02,outp:0.07,ctx:"128K",var:"full"},
+         {h:"Lattice Compute",inp:0.03,outp:0.09,ctx:"128K",var:"full"}]},
+ {name:"Qwerty-3 72B",prov:"Lantern",tk:"LTN:QWERTY3-72B",open:true,task:0.12,blend:0.23,inp:0.14,outp:0.42,
+  cap:72,code:84,reason:71,elo:1322,tps:205,ttft:0.16,ctx:"131K",modality:"Text",lic:"Apache 2.0",conf:"med",days:2,
+  hosts:[{h:"Lantern (owner)",inp:0.14,outp:0.42,ctx:"131K",var:"full"},
+         {h:"Halyard",inp:0.16,outp:0.49,ctx:"131K",var:"full"},
+         {h:"Bitwise",inp:0.12,outp:0.36,ctx:"32K",var:"quantized"}]},
+ {name:"DeepThink V3",prov:"Abyssal",tk:"ABY:DEEPTHINK-V3",open:true,task:1.05,blend:0.70,inp:0.42,outp:1.25,
+  cap:82,code:83,reason:91,elo:1356,tps:150,ttft:0.41,ctx:"160K",modality:"Text",lic:"MIT",conf:"med",days:1,
+  hosts:[{h:"Abyssal (owner)",inp:0.42,outp:1.25,ctx:"160K",var:"full"},
+         {h:"Relay AI",inp:0.48,outp:1.40,ctx:"160K",var:"full"},
+         {h:"Tessera",inp:0.38,outp:1.10,ctx:"64K",var:"quantized"}]},
+ {name:"Mistral-Large 2",prov:"Meridian",tk:"MRD:MISTRAL-L2",open:true,task:0.85,blend:1.58,inp:0.96,outp:2.90,
+  cap:74,code:75,reason:73,elo:1316,tps:170,ttft:0.25,ctx:"128K",modality:"Text",lic:"Apache 2.0",conf:"med",days:7,
+  hosts:[{h:"Meridian",inp:0.96,outp:2.90,ctx:"128K",var:"full"},
+         {h:"Northgate",inp:1.02,outp:3.05,ctx:"128K",var:"full"},
+         {h:"Relay AI",inp:1.05,outp:3.15,ctx:"128K",var:"full"}]},
+];
+
+/* ---------------- label engine (spec §6.3, v4.1 per-axis rule) ----------------
+   Coding and reasoning are NOT shown as columns, but they stay in the data and
+   the domination test still reads every axis. Dropping them from the test would
+   re-open the specialist mislabel bug fixed in v4.1.                            */
+const MARGIN=0.12, SPEC_GAP=8, NOISE=2, BAND=5;
+
+const DATA=MODELS.map((m,i)=>{
+  const dominators=MODELS.filter(o=>o!==m
+      && o.cap>=m.cap-NOISE && o.code>=m.code-NOISE && o.reason>=m.reason-NOISE
+      && o.task<=m.task*(1-MARGIN))
+    .sort((a,b)=>a.task-b.task);
+  let label;
+  if(dominators.length) label="Overpriced";
+  else{const v=m.cap/m.task;
+    if(m.cap>=78&&v<60) label="Premium";
+    else if(m.cap<60&&m.task<0.35) label="Commodity";
+    else label="Efficient";}
+  const best=Math.max(m.code,m.reason);
+  const invert=MODELS.some(o=>o!==m&&o.blend>m.blend&&o.task<m.task);
+  return {...m,id:i,label,
+    dominatedBy:dominators.length?dominators[0]:null,
+    specialist:(best-m.cap)>=SPEC_GAP,
+    specAxis:m.code>=m.reason?"coding":"reasoning",
+    invert, ctxN:parseCtx(m.ctx)};
+});
+
+function parseCtx(s){const n=parseFloat(s);return s.includes("M")?n*1e6:n*1e3;}
+
+/* ---------------- state ---------------- */
+let state={filter:"all",q:"",sortKey:"task",sortDir:1,detail:null};
+const f=n=>n>=10?n.toFixed(1):n.toFixed(2);
+const CONFRANK={high:3,med:2,low:1};
+const LABELRANK={Efficient:4,Premium:3,Commodity:2,Overpriced:1};
+
+function filtered(){
+  return DATA.filter(m=>{
+    if(state.filter==="open"&&!m.open)return false;
+    if(state.filter==="prop"&&m.open)return false;
+    if(state.q){const s=(m.name+" "+m.prov+" "+m.tk).toLowerCase(); if(!s.includes(state.q))return false;}
+    return true;
+  });
+}
+function sortVal(m,k){
+  if(k==="model")return m.name.toLowerCase();
+  if(k==="label")return LABELRANK[m.label];
+  if(k==="conf")return CONFRANK[m.conf]*100-m.days;
+  if(k==="ctx")return m.ctxN;
+  return m[k];
+}
+function sortRows(r){
+  const k=state.sortKey,d=state.sortDir;
+  return r.slice().sort((a,b)=>{const x=sortVal(a,k),y=sortVal(b,k);return x<y?-d:x>y?d:0;});
+}
+function arrow(k){return state.sortKey===k?`<span class="arrow">${state.sortDir<0?'▾':'▴'}</span>`:'';}
+
+/* ---------------- list render ---------------- */
+const COLS=[
+  {k:"model",t:"Model",l:true},
+  {k:"task", t:"Cost to run a task"},
+  {k:"cap",  t:"Capability"},
+  {k:"elo",  t:"Elo"},
+  {k:"tps",  t:"Speed"},
+  {k:"ctx",  t:"Context"},
+  {k:"label",t:"Rating"},
+  {k:"conf", t:"Confidence · Updated"},
+];
+
+function renderList(){
+  const rows=sortRows(filtered());
+  document.getElementById('thead').innerHTML='<tr>'+COLS.map(c=>
+    `<th ${c.l?'class="l"':''} data-sort="${c.k}" tabindex="0">${c.t} ${arrow(c.k)}</th>`).join('')+'</tr>';
+
+  document.getElementById('tbody').innerHTML=rows.map(m=>`<tr data-id="${m.id}" tabindex="0">
+    <td class="l"><span class="sig ${m.label}"></span>
+      <div class="nm">${m.name}${m.open?'<span class="open">OPEN</span>':''}</div>
+      <div class="pr">${m.prov} · <span class="tk">${m.tk}</span></div></td>
+    <td><span class="cost">$${f(m.task)}<span class="u"> /task</span></span>
+      <div class="costsub${m.invert?' invert':''}">$${f(m.blend)} / M tokens</div></td>
+    <td><span class="capw"><span class="capnum">${m.cap}</span><span class="capbar"><i style="width:${m.cap}%"></i></span></span></td>
+    <td><span class="num">${m.elo}</span></td>
+    <td><span class="num">${m.tps}<span class="un"> t/s</span></span></td>
+    <td><span class="num">${m.ctx}</span></td>
+    <td><span class="tag ${m.label}">${m.label}</span>${
+      m.dominatedBy?`<span class="spec">↓ ${m.dominatedBy.name} costs less, matches it</span>`
+      :m.specialist?`<span class="spec">◆ ${m.specAxis} standout</span>`:''}</td>
+    <td><span class="trust"><span class="conf"><span class="dot ${m.conf}"></span>${cap1(m.conf)}</span>
+      <span class="age ${m.days>3?'stale':''}">${m.days}d</span></span></td>
+  </tr>`).join('');
+
+  document.getElementById('count').textContent=
+    `${rows.length} of ${DATA.length} models · sorted by ${pretty()} · sample data`;
+  if(document.getElementById('fpanel').classList.contains('show')) drawFrontier('fpanel',null);
+}
+function cap1(s){return s[0].toUpperCase()+s.slice(1);}
+function pretty(){
+  const m={task:"$/task",cap:"capability",elo:"Elo",tps:"speed",ctx:"context",
+           model:"name",label:"rating",conf:"confidence"};
+  return (m[state.sortKey]||state.sortKey)+(state.sortDir<0?" ↓":" ↑");
+}
+
+/* ---------------- summary ---------------- */
+function buildSummary(){
+  const byTask=DATA.slice().sort((a,b)=>a.task-b.task);
+  const byVal =DATA.slice().sort((a,b)=>(b.cap/b.task)-(a.cap/a.task));
+  const byCap =DATA.slice().sort((a,b)=>b.cap-a.cap);
+  const over  =DATA.filter(m=>m.label==="Overpriced").length;
+  document.getElementById('summary').innerHTML=`
+   <div class="stat"><div class="k">Cheapest to run</div><div class="v">${byTask[0].name} <small>$${f(byTask[0].task)} / task</small></div></div>
+   <div class="stat"><div class="k">Best value</div><div class="v">${byVal[0].name} <small>cap ${byVal[0].cap} · $${f(byVal[0].task)}</small></div></div>
+   <div class="stat"><div class="k">Frontier leader</div><div class="v">${byCap[0].name} <small>cap ${byCap[0].cap}</small></div></div>
+   <div class="stat"><div class="k">Flagged overpriced</div><div class="v">${over} <small>of ${DATA.length} tracked</small></div></div>`;
+}
+
+/* ---------------- detail render ---------------- */
+function verdictLine(m){
+  if(m.label==="Overpriced")
+    return `<b>${m.dominatedBy.name}</b> costs $${f(m.dominatedBy.task)} per task — ${Math.round((1-m.dominatedBy.task/m.task)*100)}% less — and matches or beats ${m.name} on every published capability axis. That is pure domination, which is the only thing this rating asserts.`;
+  if(m.label==="Premium")
+    return `Sits on the efficient frontier at the top of the capability range. You are paying for the best available, and nothing tracked here delivers the same quality for less.`;
+  if(m.label==="Commodity")
+    return `Sits on the frontier at the cheap, lower-capability end. Right for simple or high-volume work where quality headroom is not the constraint.`;
+  return `Sits on the efficient frontier with strong capability per dollar. Nothing tracked here matches it on every axis for meaningfully less money.`;
+}
+function renderDetail(id){
+  const m=DATA.find(x=>x.id===id);
+  const peers=DATA.filter(p=>p.id!==m.id && Math.abs(p.cap-m.cap)<=BAND).sort((a,b)=>a.task-b.task);
+  const cheaperBetter=peers.filter(p=>p.task<m.task && p.cap>=m.cap);
+  const band=[m,...peers].sort((a,b)=>a.task-b.task);
+  const cheapestHost=m.hosts.filter(h=>h.var==="full").sort((a,b)=>a.inp-b.inp)[0];
+
+  let peerNote;
+  if(!peers.length){
+    peerNote=`No other tracked model sits within ±${BAND} capability points of ${m.name}. It has no direct substitute at this quality level.`;
+  }else if(cheaperBetter.length){
+    const c=cheaperBetter[0];
+    peerNote=`${peers.length} model${peers.length>1?'s':''} sit within ±${BAND} capability points. <b>${c.name}</b> is the cheapest of them at <b>$${f(c.task)}</b> per task — ${Math.round((1-c.task/m.task)*100)}% below ${m.name} — at equal or better capability.`;
+  }else{
+    peerNote=`${peers.length} model${peers.length>1?'s':''} sit within ±${BAND} capability points. None is cheaper at equal or better capability, so ${m.name} holds this band on price.`;
+  }
+
+  document.getElementById('detail').innerHTML=`
+   <button class="back" id="back">← All models</button>
+   <div class="dhead">
+     <div>
+       <div class="dtitle">${m.name}${m.open?'<span class="open">OPEN</span>':''}</div>
+       <div class="dsub">${m.prov} · <span class="tk">${m.tk}</span> · ${m.lic}</div>
+     </div>
+     <div class="dverdict">
+       <span class="tag ${m.label}">${m.label}</span>${m.specialist?`<span class="spec">◆ ${m.specAxis} standout — its best axis runs well above its overall score</span>`:''}
+       <p>${verdictLine(m)}</p>
+     </div>
+   </div>
+
+   <div class="cards">
+     <div class="kpi"><div class="k">Cost to run a task</div><div class="v">$${f(m.task)}</div>
+       <div class="s${m.invert?' invert':''}">$${f(m.blend)} / M tokens blended${m.invert?' · sticker price inverts':''}</div></div>
+     <div class="kpi"><div class="k">Capability</div><div class="v">${m.cap}<span> / 100</span></div>
+       <div class="s">source unconfirmed — Phase 0</div></div>
+     <div class="kpi"><div class="k">Chat Elo</div><div class="v">${m.elo}</div>
+       <div class="s">LMArena, published openly</div></div>
+     <div class="kpi"><div class="k">Speed</div><div class="v">${m.tps}<span> t/s</span></div>
+       <div class="s">${m.ttft.toFixed(2)}s to first token</div></div>
+   </div>
+
+   <div class="panels">
+     <div class="panel">
+       <h4>Price detail</h4>
+       <div class="note">${m.open?'Open weights — all comparable hosts, cheapest qualifying one is canonical.':'Single-source model — the owner list price is canonical.'}</div>
+       <div class="kv"><span class="kk">Input</span><span class="vv">$${m.inp.toFixed(2)} / M</span></div>
+       <div class="kv"><span class="kk">Output</span><span class="vv">$${m.outp.toFixed(2)} / M</span></div>
+       <div class="kv"><span class="kk">Blended (70/30)</span><span class="vv">$${f(m.blend)} / M</span></div>
+       ${m.hosts.length>1?`<div class="kv" style="border-top:1px solid var(--line);margin-top:6px;padding-top:12px">
+         <span class="kk" style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);font-weight:600">Host spread</span><span></span></div>`+
+         m.hosts.map(h=>{
+           const dq=h.var==="quantized";
+           const best=cheapestHost&&h.h===cheapestHost.h;
+           return `<div class="kv"><span class="kk">${h.h}<span class="hostmeta">${h.ctx} · ${h.var}${dq?' · does not qualify':''}</span></span>
+             <span class="vv ${dq?'dq':best?'cheapest':''}">$${h.inp.toFixed(2)} / $${h.outp.toFixed(2)}</span></div>`;
+         }).join(''):''}
+     </div>
+
+     <div class="panel">
+       <h4>Capability detail</h4>
+       <div class="note">Observed facts, sourced not owned. Every number carries its provenance.</div>
+       <div class="axis"><span class="an">Overall</span><span class="ab"><i style="width:${m.cap}%"></i></span><span class="av">${m.cap}</span></div>
+       <div class="axis"><span class="an">Coding</span><span class="ab"><i class="${m.code>m.cap+SPEC_GAP-1?'hi':''}" style="width:${m.code}%"></i></span><span class="av">${m.code}</span></div>
+       <div class="axis"><span class="an">Reasoning</span><span class="ab"><i class="${m.reason>m.cap+SPEC_GAP-1?'hi':''}" style="width:${m.reason}%"></i></span><span class="av">${m.reason}</span></div>
+       <div class="axis"><span class="an">Chat Elo</span><span class="ab"><i style="width:${((m.elo-1100)/350*100).toFixed(0)}%"></i></span><span class="av">${m.elo}</span></div>
+       <div class="kv" style="border-top:1px solid var(--line);margin-top:8px;padding-top:12px"><span class="kk">Context window</span><span class="vv">${m.ctx}</span></div>
+       <div class="kv"><span class="kk">Modality</span><span class="vv">${m.modality}</span></div>
+       <div class="kv"><span class="kk">Confidence · updated</span><span class="vv"><span class="dot ${m.conf}" style="display:inline-block;margin-right:6px"></span>${cap1(m.conf)} · ${m.days}d ago</span></div>
+       <div class="unsourced">Coding and reasoning are shown here but not on the home table. Their source is unconfirmed pending Phase 0 — they drive the rating engine, so the numbers must exist, but publishing them as columns would promise a provenance we do not yet have.</div>
+     </div>
+   </div>
+
+   <div class="peers">
+     <h4>Similar models — within ±${BAND} capability points</h4>
+     <div class="note">${peerNote}</div>
+     ${band.length>1?`<table class="ptable">
+       <thead><tr><th class="l">Model</th><th>$/task</th><th>Capability</th><th>Elo</th><th>Speed</th><th>Rating</th></tr></thead>
+       <tbody>${band.map(p=>{
+         const me=p.id===m.id;
+         const beats=!me&&p.task<m.task&&p.cap>=m.cap;
+         const d=p.cap-m.cap;
+         return `<tr class="${me?'me':beats?'beats':''}" data-id="${p.id}" ${me?'':'tabindex="0"'} style="${me?'':'cursor:pointer'}">
+           <td class="l"><span class="pn">${p.name}${me?'<span class="mine">this model</span>':''}</span></td>
+           <td><span class="num" style="font-size:13.5px;color:var(--ink)">$${f(p.task)}</span></td>
+           <td><span class="num">${p.cap}</span>${me?'':`<span class="delta ${d>0?'up':d<0?'dn':''}">${d>0?'+':''}${d}</span>`}</td>
+           <td><span class="num">${p.elo}</span></td>
+           <td><span class="num">${p.tps}<span class="un"> t/s</span></span></td>
+           <td><span class="tag ${p.label}">${p.label}</span></td></tr>`;
+       }).join('')}</tbody></table>`:`<div class="empty">Nothing to compare against in this band.</div>`}
+   </div>
+
+   <div id="frontierWrap" style="margin-top:14px">
+     <div class="fhead">
+       <div><h3>Where ${m.name} sits on the frontier</h3>
+       <span class="hint">The shaded strip is the ±${BAND} capability band — anything to its left is cheaper at comparable quality</span></div>
+     </div>
+     <div id="dpanel"></div>
+   </div>`;
+
+  drawFrontier('dpanel',m);
+  document.getElementById('back').addEventListener('click',goList);
+  document.querySelectorAll('.ptable tr[data-id]').forEach(tr=>{
+    const pid=+tr.dataset.id; if(pid===m.id)return;
+    tr.addEventListener('click',()=>goDetail(pid));
+    tr.addEventListener('keydown',e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();goDetail(pid);}});
+  });
+  window.scrollTo({top:0,behavior:'instant'});
+}
+
+/* ---------------- frontier ---------------- */
+function drawFrontier(target,me){
+  const rows=me?DATA:filtered();
+  if(!rows.length){document.getElementById(target).innerHTML='';return;}
+  const W=1180,H=380,pad={l:56,r:22,t:18,b:42};
+  const xs=DATA.map(m=>Math.log10(m.task)),ys=DATA.map(m=>m.cap);
+  const xmin=Math.min(...xs)-0.15,xmax=Math.max(...xs)+0.18,
+        ymin=Math.min(...ys)-6,ymax=Math.max(...ys)+6;
+  const X=v=>pad.l+((Math.log10(v)-xmin)/(xmax-xmin))*(W-pad.l-pad.r);
+  const Y=v=>H-pad.b-((v-ymin)/(ymax-ymin))*(H-pad.t-pad.b);
+  const col={Efficient:'#0E9A86',Premium:'#B57A16',Commodity:'#5E7288',Overpriced:'#B24734'};
+
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Cost capability frontier" style="width:100%;height:auto">`;
+  if(me){
+    const yTop=Y(Math.min(me.cap+BAND,ymax)),yBot=Y(Math.max(me.cap-BAND,ymin));
+    s+=`<rect x="${pad.l}" y="${yTop}" width="${W-pad.l-pad.r}" height="${yBot-yTop}" fill="#EDF1F5" opacity=".85"/>`;
+  }
+  s+=`<line x1="${pad.l}" y1="${H-pad.b}" x2="${W-pad.r}" y2="${H-pad.b}" stroke="#EAEEF3"/>`;
+  s+=`<line x1="${pad.l}" y1="${pad.t}" x2="${pad.l}" y2="${H-pad.b}" stroke="#EAEEF3"/>`;
+  [0.02,0.05,0.1,0.25,0.5,1,2,5].forEach(t=>{
+    if(t>=Math.pow(10,xmin)&&t<=Math.pow(10,xmax))
+      s+=`<text class="gridtxt" x="${X(t)}" y="${H-pad.b+16}" text-anchor="middle">$${t}</text>`;});
+  [50,60,70,80,90].forEach(g=>{
+    if(g>=ymin&&g<=ymax)
+      s+=`<text class="gridtxt" x="${pad.l-9}" y="${Y(g)+3}" text-anchor="end">${g}</text>
+          <line x1="${pad.l}" y1="${Y(g)}" x2="${W-pad.r}" y2="${Y(g)}" stroke="#EAEEF3" stroke-dasharray="2 5"/>`;});
+  s+=`<text class="axlabel" x="${W/2}" y="${H-5}" text-anchor="middle">cost per task →</text>`;
+  s+=`<text class="axlabel" transform="translate(15,${H/2}) rotate(-90)" text-anchor="middle">capability →</text>`;
+
+  rows.forEach(m=>{
+    const c=col[m.label], isMe=me&&m.id===me.id;
+    if(isMe) s+=`<circle cx="${X(m.task)}" cy="${Y(m.cap)}" r="13" fill="none" stroke="${c}" stroke-width="1.5" opacity=".45"/>`;
+    s+=`<circle cx="${X(m.task)}" cy="${Y(m.cap)}" r="${isMe?8:6}" fill="${c}" stroke="#FFFFFF" stroke-width="1.5"/>`;
+    s+=`<text class="dotname${isMe?' me':''}" x="${X(m.task)+(isMe?14:10)}" y="${Y(m.cap)+3}">${m.name}</text>`;
+  });
+  s+=`</svg>`;
+  document.getElementById(target).innerHTML=s;
+}
+
+/* ---------------- routing ---------------- */
+function goDetail(id){state.detail=id;document.body.classList.add('detail');renderDetail(id);}
+function goList(){state.detail=null;document.body.classList.remove('detail');renderList();window.scrollTo({top:0,behavior:'instant'});}
+
+/* ---------------- events ---------------- */
+document.getElementById('search').addEventListener('input',e=>{
+  state.q=e.target.value.toLowerCase().trim();renderList();});
+document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{
+  document.querySelectorAll('.chip').forEach(x=>x.setAttribute('aria-pressed','false'));
+  c.setAttribute('aria-pressed','true');state.filter=c.dataset.filter;renderList();}));
+document.getElementById('thead').addEventListener('click',e=>{sortClick(e.target.closest('th'));});
+document.getElementById('thead').addEventListener('keydown',e=>{
+  if(e.key==="Enter"||e.key===" "){e.preventDefault();sortClick(e.target.closest('th'));}});
+function sortClick(th){
+  if(!th||!th.dataset.sort)return;
+  const k=th.dataset.sort;
+  if(state.sortKey===k)state.sortDir*=-1;
+  else{state.sortKey=k;state.sortDir=(k==="model"||k==="task")?1:-1;}
+  renderList();
+}
+document.getElementById('tbody').addEventListener('click',e=>{
+  const tr=e.target.closest('tr'); if(tr)goDetail(+tr.dataset.id);});
+document.getElementById('tbody').addEventListener('keydown',e=>{
+  if(e.key==="Enter"||e.key===" "){const tr=e.target.closest('tr');if(tr){e.preventDefault();goDetail(+tr.dataset.id);}}});
+document.getElementById('ftoggle').addEventListener('click',e=>{
+  const p=document.getElementById('fpanel'),show=!p.classList.contains('show');
+  p.classList.toggle('show',show);
+  e.target.textContent=show?'Hide chart ▴':'Show chart ▾';
+  e.target.setAttribute('aria-expanded',show);
+  if(show)drawFrontier('fpanel',null);});
+document.getElementById('logo').addEventListener('click',goList);
+document.getElementById('logo').addEventListener('keydown',e=>{if(e.key==="Enter")goList();});
+
+buildSummary(); renderList();
+</script>
+</body>
+</html>

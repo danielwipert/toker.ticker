@@ -1,0 +1,395 @@
+**CHORUS AI SYSTEMS**
+
+**TokenTicker**
+
+**The authoritative cost-and-performance tracker for AI models**
+
+*Artificial Analysis tells you which model is smartest.*
+
+*TokenTicker tells you what each model actually costs to do your job — measured, not borrowed.*
+
+**Product Specification, v4  •  July 2026  •  Daniel Wipert**
+
+*Supersedes v3.1. v4 is the post-smoke-test revision. It hardens price sourcing to a single source, moves the owned cost battery from a later-phase "moat" onto the MVP critical path as the actual source of the hero metric, resolves the capability-licensing question, and restructures the front door around a simple-first default. Substantive changes are summarized in Section 1.*
+
+# 1. What Changed in v4
+
+v3.1 was a strong, internally coherent spec. v4 keeps its spine — the two-layer trust model, confidence/freshness on every cell, the rule-based label engine, JSON-in-repo snapshots — and changes five things that a data-flow smoke test against the live APIs (OpenRouter, Artificial Analysis) forced into the open. Everything downstream follows from these.
+
+| **#** | **What changed** | **Why** |
+| --- | --- | --- |
+| 1 | **Price is OpenRouter-only.** OpenRouter's models/endpoints feed is the sole price source, pulled daily. Nothing else touches price. Owner list pages and cloud-marketplace scraping are removed as price sources. | Model prices are dynamic — they move often, per-provider, per-host. A single daily automated feed is the only way to stay current and internally consistent; hand-entered owner pages would be stale by their own freshness rule the moment a provider moved. OpenRouter already carries first-party proprietary models at near-canonical price *and* every open-weight host, so one source covers both regimes. |
+| 2 | **The hero $/task is measured by our own battery, from day one.** The MVP $/task is `measured tokens × OpenRouter price`, where tokens (including hidden reasoning tokens) are measured by running a fixed task battery through OpenRouter and reading its generation endpoint. The v3.1 plan to display Artificial Analysis's published cost-per-task at MVP is removed. | AA's cost-per-task is computed on AA's price basis and is Pro/Commercial-tier only; displaying it on a public site is redistribution requiring an enterprise license. Measuring tokens ourselves via OpenRouter is cheaper (cents per open-model sweep), fully owned, license-clean, and captures reasoning-token burn directly — the exact thing that makes $/task matter. |
+| 3 | **The battery moves onto the MVP critical path.** What v3.1 scoped as a fast-follow / Phase-5 moat is now the MVP hero source. A minimal v0 task set (a few tasks per category) becomes a launch-blocking deliverable, finalized in Phase 0. | Consequence of change 2. If the battery is the hero source, the MVP cannot ship without task content. |
+| 4 | **The MVP battery measures cost, not correctness.** $/task = tokens × price, no grading. success_rate, cost-per-successful-task, and the generator-verifier pass all move to V2. The adjacent Capability column remains the guard against "cheap because weak." | Measuring tokens-to-run does not require judging answers. Deferring grading keeps the MVP battery a simple measurement loop, not a judgment engine, and avoids re-entering the success-rate corruption trap (5.5) prematurely. |
+| 5 | **Front door is simple-first.** The default view is a stripped-down table (Model, $/task, Capability, label, Confidence) built for a manager. The full six-band stock screener sits one click away behind an "Analyst view" toggle. | The product's stated audience is a business leader making a budget call, not an analyst. A dense 20-column screener as the front door contradicts that. Simple-first preserves every bit of screener depth while matching the audience. |
+
+## 1.1 One question still open (Phase-0 confirmation)
+
+| **Question** | **v4 recommendation** | **Resolve in** |
+| --- | --- | --- |
+| Where do capability *scores* come from, given AA's public-display licensing? | Open-first: LMArena (Elo) as the primary capability signal, complemented by open leaderboards where coverage helps. AA retained only as an attributed, linked reference *if* a citation-with-attribution posture is confirmed acceptable under their terms; otherwise dropped entirely. Capability is sourced, never owned, at MVP; the owned battery measures cost, not capability. | Phase 0, §8 |
+
+# 2. Product Identity and Goal
+
+## 2.1 One line
+
+*TokenTicker is the authoritative tracker of what each AI model costs to do real work — a cost measured on our own task battery — built so a corporate manager can make a defensible model-cost decision in minutes.*
+
+## 2.2 The goal, stated plainly
+
+The product answers one question better than anyone else: for the job I need done, which model does it well enough, at the lowest real cost, and how sure are we? Not which model is smartest in the abstract — the benchmarking field already answers that. The buyer is a manager allocating a budget: an AI product or implementation lead, a finance or procurement partner, an engineer choosing models for a workload.
+
+## 2.3 Non-goals
+
+- Not a capability-benchmarking lab. We run an owned battery, but it measures **cost and token consumption**, not a capability score. Capability we source and cite. Our composite is the cost-side battery, never a homemade intelligence index.
+- Not a router or gateway. We do not execute production traffic or move requests. (We do make our own metered calls to *measure* cost — that is the battery, not a routing service.)
+- Not a hype feed. No model-of-the-week, no launch theatre.
+- Not falsely precise. Confidence and freshness are shown on every number.
+
+# 3. Positioning Against Artificial Analysis
+
+Artificial Analysis (AA) is the strong incumbent: multi-benchmark quality, speed, pricing, and an intelligence-vs-cost chart, with a paid data API. We do not win by having a table and a chart. We win on job, audience, and — now that the hero number is measured by us — on an owned metric.
+
+| **Layer** | **TokenTicker** |
+| --- | --- |
+| **Headline** | AA tells you which model is smartest; TokenTicker tells you what each model actually costs to do your job. |
+| **Supporting line** | Built for the manager making a budget call, not the analyst reading a research dashboard. |
+| **The metric that proves it** | Cost to run a standard task — real dollars including token consumption — **measured on our own open battery**, not reframed from anyone else's number. |
+| **The moat** | An independent, reproducible, fully-open cost battery that nobody else publishes, live from the MVP rather than deferred. |
+
+*What changed from v3.1: the differentiation no longer rests only on job, framing, and owned pricing while we wait for a future battery. The battery is here at launch, so the hero number is genuinely ours from day one. Capability remains sourced; that is the half we win by citation and honesty, not by owning.*
+
+# 4. Target Users
+
+| **User (priority order)** | **Core question** | **What they need from us** |
+| --- | --- | --- |
+| AI product / implementation lead | Which model for this feature, defensibly and affordably? | Cost-to-run-task, side-by-side compare, a sourced rationale they can paste into a doc. |
+| Finance / procurement | Are we overpaying for the intelligence we use? | Cheapest-qualifying live prices, true cost per task, history, exportable views. |
+| AI engineer | Best measured capability per dollar for my task? | Task-specific cost, capability axes, speed, context, the Analyst view, an API later. |
+| Analyst / press / public | Where is cost-performance heading? | A readable default view, price history, shareable model pages. |
+
+# 5. The Hero Metric: Cost to Run a Standard Task
+
+## 5.1 What it is
+
+The headline number is the dollars required to complete one run of a fixed, disclosed workload on each model. It is not the per-token price. It is the OpenRouter price multiplied by the tokens that model actually consumes to finish the job — measured by us.
+
+## 5.2 Why it beats the per-token price tag
+
+Per-token pricing hides the cost that matters. Reasoning models can burn many times more tokens to reach the same answer, so a model with a cheap sticker price can be expensive per task, and a pricier-looking model can be the bargain. Cost-to-run-task surfaces exactly this, and almost nobody leads with it.
+
+*Worked illustration: a reasoning model priced at $0.42 per million tokens can cost more to finish a standard task than a model priced at $0.55 per million, because it consumes roughly twice the tokens — much of that invisible reasoning tokens. The sticker says the first is cheaper. The measured task cost says the opposite. That column is the product.*
+
+## 5.3 How we measure it (the owned battery)
+
+`$/task (per model) = Σ over tasks [ tokens_consumed × OpenRouter price ] / task count`, category-grouped, then rolled up.
+
+- **Tokens are measured, not assumed.** We run each task on each model through OpenRouter. For every completion we read the generation record (via the generation ID returned on the response), which reports prompt tokens, completion tokens, and native reasoning tokens actually consumed, plus realized cost. Reasoning tokens are otherwise hidden in the chat response; the generation endpoint is what makes them visible.
+- **Price is the daily OpenRouter price** (§9). The measured token counts refresh only when we re-run the battery (on model release / roster change); the price refreshes daily. `$/task` = daily-fresh price × stably-measured tokens. The volatile half stays daily; the measured half does not need to.
+- **No grading at MVP.** We record cost, not correctness. A model that bails cheaply will show a low $/task; the Capability column sitting beside it is the guard against reading that as a bargain. Grading (generator-verifier, success_rate, cost-per-successful-task) is V2.
+
+## 5.4 The standard task: interface contract and phased sourcing
+
+v4 locks the battery's interface contract and category list (unchanged from v3.1) and, because the battery is now the MVP hero source, adds a **v0 task set** as a Phase-0 deliverable.
+
+**Categories (locked).** Five categories, mapping onto jobs a manager budgets for: coding, reasoning, extraction, summarization, and long-context Q&A. Chat is excluded (covered by the Elo axis). Agentic / tool-use is a conscious v1-battery omission (expensive and hard to grade reproducibly), documented rather than hidden.
+
+**Task count (config).** 3–5 tasks per category, ~15–25 total. The count lives in config; only the category grouping is locked. **v0 starter set for the MVP: 1–2 tasks per category (~5–10 total)**, chosen to exercise realistic token consumption (short input / long reasoning for the reasoning category; large input / short output for long-context and extraction). Finalized and eyeballed against real runs in Phase 0.
+
+**Headline rollup (locked).** Headline $/task = equal-weighted mean of the five category $/task values. Weighting by category keeps the headline stable regardless of task count per bucket. Custom weights are a V2 Team feature.
+
+**Grading (V2).** Generator-verifier, pass/fail per task, single attempt per task per snapshot. success_rate = passed ÷ attempted; cost-per-successful-task = $/task ÷ success_rate. Not in the MVP.
+
+**The swappable interface (locked, updated).** A `TaskCostProvider` returns, per model: `headline_dollars_per_task`, `per_category{}`, `success_rate | None`, `tokens_used`, `source`, `task_suite_version`. The **MVP battery implementation** fills `headline_dollars_per_task`, `per_category` (populated — we run per-category tasks), `tokens_used`, `source = "own_battery"`, and leaves `success_rate = None`. The **V2 graded battery** fills `success_rate` too. This is the same interface v3.1 defined; the difference is the MVP is already the owned implementation, and per-category is populated from launch rather than empty.
+
+| **Phase** | **Source of the standard-task cost** | **What it fills** |
+| --- | --- | --- |
+| MVP | Owned battery run via OpenRouter; we measure tokens (incl. reasoning) and cost across the five categories, ungraded | headline, per_category, tokens_used, source. success_rate empty. |
+| V2 | Same battery, graded by a generator-verifier pass | Adds success_rate and cost-per-successful-task. |
+
+**Coverage gaps (the honest blank).** A model earns a $/task only once we have run the battery on it. If a model is not yet measured (e.g. absent from OpenRouter, or not yet run), the $/task cell shows "— awaiting measurement," the row stays sortable on what we do have, and on a $/task sort those models drop to a labeled group at the bottom, ordered by blended $/M. We never invent a token default — doing so would understate reasoning models and corrupt the exact economics the product exists to expose (5.5).
+
+## 5.5 A bug from earlier drafts, still fixed
+
+*Earlier drafts set success probability equal to a benchmark score ÷ 100, then derived cost-per-successful-task from it. A benchmark score is not a real-world success rate; that substitution silently corrupted the economics. It stays removed. In the MVP there is no success rate at all — $/task measures cost only. Once the owned battery adds grading in V2, success rate becomes an actually measured value and cost-per-successful-task becomes real.*
+
+# 6. The Two-Layer Trust Model
+
+Every number on the site belongs to exactly one layer, and the interface keeps them distinct.
+
+## 6.1 Layer 1 — Observed facts
+
+| **Fact** | **Source** |
+| --- | --- |
+| Price (all models) | OpenRouter models/endpoints feed only. Single-source proprietary models: OpenRouter's first-party listing (near-canonical). Multi-source open models: cheapest qualifying host among OpenRouter's hosts. Full per-host spread on the detail page. |
+| Measured token consumption per task | Our own battery, via OpenRouter's generation endpoint (prompt / completion / reasoning tokens). |
+| Capability: overall / coding / reasoning | Sourced; open-first (see §8). Cited, dated, version-stamped. |
+| Capability: chat preference (Elo) | LMArena. |
+| Speed: median tok/s, time to first token | Measured on our own battery runs where possible; otherwise a sourced, dated median. |
+| Context window, modalities, license | Model cards, provider docs, and OpenRouter metadata. |
+
+## 6.2 Layer 2 — Derived value
+
+Computed by deterministic Python from Layer 1, each with a visible formula and adjustable inputs.
+
+| **Derived metric** | **Definition** |
+| --- | --- |
+| Cost to run a standard task | The hero metric (§5). Measured tokens × OpenRouter price. Default value lens. |
+| Value | Capability per dollar of task cost, log-compressed and scaled to 0–100 against fixed, version-stamped anchors (not the live table), so historical Value stays comparable. Axis switchable to coding, reasoning, or chat-Elo; default axis is the headline capability index. No hard capability floor — the adjacent Capability column is the guard. |
+| Blended price | Weighted input/output price from OpenRouter, default 70/30, adjustable. |
+| Rule-based label | Efficient / Premium / Commodity / Overpriced (plane labels) plus an optional Specialist flag, from transparent rules; click to see the rule. See 6.3. |
+
+## 6.3 The label engine
+
+Unchanged from v3.1. Two independent tests. Four labels are positions on the cost × capability plane; Specialist is an overlay read from the capability sub-axes.
+
+**Test 1 — plane labels (frontier domination).** A model is dominated when another listed model is at least as capable and meaningfully cheaper (10–15% margin, set in Phase 0, so noise doesn't trigger domination). Domination plus capability band yields one primary label:
+
+| **Capability band** | **On / near frontier** | **Below frontier (dominated)** |
+| --- | --- | --- |
+| **Top capability** | Premium | Overpriced |
+| **Mid, strong value** | Efficient | Overpriced |
+| **Low capability, low cost** | Commodity | Overpriced |
+
+- **Efficient** — on the frontier with high value; the smart-default zone.
+- **Premium** — on the frontier at the top of the capability range but low value; you pay for the best, and it is the best.
+- **Commodity** — on the frontier at the low-cost, lower-capability end; right for simple or high-volume work.
+- **Overpriced** — dominated; another listed model gives at least as much capability for meaningfully less. The only cautionary label, and the most rigorously defined: pure domination, not a threshold judgment.
+
+**Test 2 — Specialist overlay.** If a model's best single axis sits markedly above its overall capability, it is a Specialist — a standout at one job. A secondary flag (`is_specialist`), not a primary label, so a row can read "Efficient · Specialist."
+
+**Time treatment.** Labels are market-relative and present-tense; a model the frontier has moved past graduates to Commodity. Value is anchored so its history stays comparable. Same relationship, two intentional time treatments.
+
+**Consistency check.** Value and labels derive from the same relationship and must agree: an Overpriced model should never carry a top Value score. Disagreement is a cheap automated QA assertion that thresholds and anchors have drifted apart.
+
+**Locked vs tunable.** Locked: the two-test structure, the one-sentence rule per label, the relative-labels / anchored-Value split, `is_specialist`. Set in Phase 0 against real data: zone boundaries and the domination margin.
+
+# 7. The Interface
+
+Per the front-door decision, the default is **simple-first**, with the full stock screener one click away.
+
+## 7.1 Default view (Manager)
+
+A stripped-down, scannable table built for a budget owner:
+
+| **Column** | **Note** |
+| --- | --- |
+| Model (+ Provider) | Name and ticker. |
+| $/task (hero) | Measured cost to run the standard task; honest-blank if unmeasured. |
+| Capability | Headline capability index, cited and dated. |
+| Label | Efficient / Premium / Commodity / Overpriced (+ Specialist). |
+| Confidence · Updated | The trust pair, on every row. |
+
+Search, a Value-sorted default, and filter chips (provider, open/closed, max $/task, min capability) live here. This view is the whole product for most managers.
+
+## 7.2 Analyst view (the full screener)
+
+A toggle labeled **"Analyst view"** opens the dense, sortable, six-band stock screener from v3.1, with tabular numerals:
+
+| **Band** | **Default columns** | **Added under Full data** |
+| --- | --- | --- |
+| Snapshot | Model, Provider, $/task, Capability, Value | — |
+| Cost | $/task, Blended $/M | Input $/M, Output $/M, per-host prices |
+| Performance | Capability, Coding, Reasoning, Chat·Elo | — |
+| Speed | Speed (median tok/s) | Time to first token |
+| Context & access | Context window | Modality, License |
+| Trust | Confidence, Updated | Source links per cell |
+
+The frontier chart (X = $/task, Y = capability) sits behind a further toggle inside Analyst view. Naming the toggle "Analyst view" now gives us the two-named-modes structure later at no extra cost.
+
+## 7.3 Presets, export, detail, compare
+
+- Preset tabs (in Analyst view): Value (default), Market, Performance, Use case.
+- Export of the open pricing + measured-cost data as CSV/JSON; sourced capability columns export with attribution and links, not rehosted.
+- Detail page: facts up top, derived value separated, one-click source trace per number, full per-host price spread, the frontier with this model highlighted, and the battery run detail (tokens per category) for the measured $/task.
+- Compare 2–5 models: cheapest task cost, best per capability axis, best value, fastest.
+
+# 8. Capability Policy and Epistemics
+
+Capability is the half we source rather than own, so credibility is won by citation and honesty. v4 changes the *source*, not the posture.
+
+## 8.1 Sources (open-first) — Phase-0 confirmation
+
+- **Primary capability signal: LMArena Elo**, rendered as a range with confidence intervals where published. Open, community-run, covers current commercial models.
+- **Complementary open leaderboards** where they add coverage or a task-specific axis (coding, reasoning), each onboarded with a named source, a public methodology, and a stated weakness.
+- **Artificial Analysis: attributed reference only, and only if terms permit.** AA's data on a public site is redistribution; their Pro tier ($417/mo per seat) is licensed for internal use, and public use requires a custom enterprise license. So AA is not the backbone. If a light citation-with-attribution-and-link-out posture is confirmed acceptable under their terms, individual AA figures may appear as attributed references; if not, AA is dropped and open sources stand alone. **This is the one open decision, resolved in Phase 0.**
+- The headline Capability is whichever index Phase 0 confirms as primary, adopted wholesale (cited, dated, version-stamped), never a homemade blend.
+
+## 8.2 Epistemics rules
+
+- Show confidence intervals where the source publishes them; render Elo as a range, never a false point.
+- Never assert a difference inside overlapping intervals; the UI says "effectively tied."
+- Flag saturated or contaminated benchmarks and de-emphasize them.
+- Record source and date on every capability score; version-stamp composite indices, since composition drifts.
+- Publish the benchmark-onboarding policy.
+
+# 9. Data Sources
+
+| **Layer** | **Source** | **Cadence** | **Note** |
+| --- | --- | --- | --- |
+| Price (all models) | OpenRouter models/endpoints API — **the only price source** | Daily, automated | Per-provider price, quantization, and context in one structured feed; no per-token markup (the platform fee is on account funding, not rates), so prices are near-canonical. Proprietary models are carried at first-party price; open models expose every host for the cheapest-qualifying filter. A model absent from OpenRouter has no price and waits in the holding set. |
+| Measured token consumption | Our battery, via OpenRouter generation endpoint | On battery run (model release / roster change) | prompt / completion / reasoning tokens + realized cost per call. Bounded cost: roughly $0.06–$3 per open-weight model per full sweep; more only for frontier models we choose to include; free-tier models cost $0. |
+| Capability | Open-first: LMArena + open leaderboards; AA attributed-only if terms clear (§8) | Weekly / on release | Sourced, cited, version-stamped. |
+| Speed | Measured on our battery runs where possible; else a sourced dated median | On run / weekly | Shown as a dated median, not a guarantee. |
+| Metadata | Model cards, provider docs, OpenRouter metadata | On release | Stable, slow-changing. |
+
+***Out of scope for the price table:*** *compute and deployment platforms (Modal, Baseten, NVIDIA NIM) price by GPU-time, not per token, and are not comparable in a $/M or $/task column. Excluded by design, documented on the methodology page.*
+
+**Roster policy.** A model earns a row if it has an OpenRouter price plus at least one capability number; price alone is not enough. Rule-based, not hand-curated. New models auto-enter on the first qualifying snapshot. A model retires (`active = false`, dropped from the default table but never deleted from history) when it leaves OpenRouter or its price is stale past threshold (~90 days, tunable). Price-only rows wait in a holding set.
+
+# 10. Confidence and Freshness
+
+Every cell carries two orthogonal indicators: a value can be high-confidence but stale, or medium-confidence but fresh.
+
+## 10.1 Confidence tiers
+
+| **Tier** | **Behavior** |
+| --- | --- |
+| High | First-party price via OpenRouter; a measured battery cost; or a benchmark with a published interval. |
+| Medium | Cheapest-qualifying open-host price (reliable price; residual uncertainty is the self-reported quantization behind "qualifying" — upgradeable once cross-checked). Reputable sourced capability feed. |
+| Low | Derived estimate, single unverified source, or a known-divergent number. |
+
+Derived numbers inherit the lowest confidence of their inputs.
+
+## 10.2 Freshness thresholds (per field)
+
+The timestamp is last-checked, not last-changed. Starting values, tunable in config:
+
+| **Field** | **Cadence** | **Flag stale after** |
+| --- | --- | --- |
+| Price | OpenRouter, daily automated | 3 days (the daily job missed twice) |
+| Measured $/task (tokens half) | On battery run | 30 days, or on model version change |
+| Capability | Weekly / on release | 30 days |
+| Speed | On run / weekly | 30 days |
+
+These ladder into the roster retirement rule: fresh → stale-flag → (at ~90 days of cold price) retire from the default table.
+
+# 11. Data Model
+
+Each run writes an immutable snapshot; the pipeline becomes a historical dataset at almost no cost. Price and measured-cost history are fully ours and fully open; capability history is version-stamped. Storage is JSON-in-repo, one snapshot folder per day, mirroring the DAN / DAJS pattern.
+
+| **Entity** | **Representative fields** |
+| --- | --- |
+| Model | model_id, name, ticker (PROVIDER:MODEL-VERSION, assigned once and stable), provider, family, release_date, open_weight_status, license, context_window, max_output, modalities, tool_calling, structured_output, active, last_updated. |
+| PriceSnapshot | snapshot_date, model_id, provider_id, source ("openrouter"), input_price, output_price, blended_price, serving_variant {full│quantized}, context_served, confidence, checked_at. |
+| CapabilityScore | snapshot_date, model_id, axis {overall│coding│reasoning│chat}, source, index_version, score, ci_low, ci_high, source_url, confidence, observed_at. |
+| Speed | snapshot_date, model_id, provider_id, median_tokens_per_sec, ttft_seconds, source, observed_at, confidence. |
+| TaskCost | snapshot_date, model_id, task_suite_version, source ("own_battery"), category {coding│reasoning│extraction│summarization│long_context│blended}, tokens_prompt, tokens_completion, tokens_reasoning, dollars, success_rate (V2 only, else null), measured_at, confidence (inherited from the price input). MVP writes one row per category plus a blended roll-up. |
+| Derived | snapshot_date, model_id, value_per_axis{}, frontier_position, label, is_specialist, methodology_version, computed_at. |
+
+# 12. Feature Set by Phase
+
+## 12.1 MVP
+
+- The simple-first default view with confidence and freshness on every cell, plus the honest-blank $/task state.
+- The **owned cost battery** (ungraded) as the hero metric across the five categories, measured via OpenRouter.
+- OpenRouter-only pricing: first-party for proprietary, cheapest-qualifying for open; open pricing + measured-cost CSV/JSON download.
+- Analyst-view screener; frontier toggle; rule-based labels; model detail with source traces, per-host spread, and battery run detail; compare; methodology and corrections.
+- Sourced capability (open-first) and speed.
+
+## 12.2 V1
+
+- Battery **grading** (generator-verifier) → success_rate and real cost-per-successful-task.
+- The use-case calculator with user-supplied success and latency inputs.
+- Price history and a frontier-over-time slider; saved views; price-change alerts; a public read API.
+- A second capability source for cross-checking.
+
+## 12.3 V2
+
+- Custom task weights, private-workload overlays (your bill, your evals), team workspaces, exportable reports.
+
+# 13. Methodology and Transparency Page
+
+In plain language with worked examples: how prices are collected from OpenRouter and what "cheapest qualifying" and the reference serving spec mean; how we measure token consumption (including reasoning tokens) on our battery and how $/task is computed; the v0 task set and category rollup; which capability sources and axes are used, each with a stated weakness; how Value is computed (log-compressed, anchored) and why labels are market-relative while Value is anchored; how the label rules work; what confidence and freshness mean; what we do not measure (including the compute-platform exclusion and the no-grading-at-MVP caveat); the benchmark-onboarding policy; and the corrections process.
+
+# 14. Corrections and Contributions
+
+Every page carries a correction link naming the field, model, claimed value, and a source. Because the dataset lives in a public repo, corrections are issues or pull requests, and accepted corrections are visible in snapshot history. This turns the inevitable wrongness of public data into a visible, improving process.
+
+# 15. Architecture and Build
+
+| **Concern** | **Choice** | **Why** |
+| --- | --- | --- |
+| Language | Python 3.12 | Matches DAN, DAJS, ARR. |
+| Price ingestion | OpenRouter models/endpoints feed, behind a source abstraction | Single daily source; cheapest-qualifying filter reads price + quantization + context. |
+| Cost measurement | Owned battery: fixed task suite run via OpenRouter; token/cost read from the generation endpoint | Owned, license-clean, captures reasoning tokens; bounded run cost. |
+| Capability ingestion | Sourced feeds (LMArena + open leaderboards) behind the same source abstraction | Swap or add a source via config; open-first keeps it license-clean and free. |
+| State | JSON-in-repo daily snapshots | Free history and an open dataset; same posture as DAN / DAJS. |
+| Core compute | Deterministic Python for all derived numbers | Auditable; an LLM in the math would break the trust wedge. |
+| Site | Static generation to GitHub Pages; frontier as a client-side chart | Cheap, auditable, nothing live to fail; matches Working America. |
+| Automation | GitHub Actions daily cron (price); battery run on release / schedule | Free tier sufficient. |
+
+# 16. Phased Roadmap
+
+Each phase ends in something runnable.
+
+| **Phase** | **Ends in something runnable** | **Key work** |
+| --- | --- | --- |
+| Phase 0 | A spreadsheet of 25–50 models with OpenRouter prices, sourced capability, and hand-computed $/task from a first battery run; the v0 task set finalized; the capability source confirmed. | Validate the metric and table feel by eye. Set Value anchors and label zone boundaries against the real spread. Lock the v0 task set. Resolve §8 (capability source / AA terms). |
+| Phase 1 | A daily GitHub Action writing a dated JSON snapshot of prices + capability + speed, and a battery runner writing measured $/task snapshots. | OpenRouter price ingestion (serving_variant / context); battery runner (generation-endpoint token capture); capability + speed ingest; schemas; confidence/freshness; deterministic value + label math. |
+| Phase 2 (MVP) | The live site: simple-first default view, Analyst screener, model pages, frontier toggle, methodology, open data download. | Static site generator, two-layer UI, source traces, per-host spread, battery run detail, corrections link, honest-blank handling. |
+| Phase 3 (V1) | Battery grading → success_rate; calculator; price history; alerts; saved views; second capability source; public read API. | Decision tooling, the graded battery, and V1 hardening. |
+| Phase 4 (V2) | Custom weights, private-workload overlays, team workspaces. | Commercial depth on a trusted core. |
+
+# 17. Monetization (Open-Core)
+
+The reference layer is never the funnel bait. The core stays free and the pricing + measured-cost data stays open; revenue comes from depth and from workloads we cannot see.
+
+| **Tier** | **Includes** | **Customer / price** |
+| --- | --- | --- |
+| Open core (free) | Full simple + Analyst views, model pages, current + historical pricing and measured cost, open download, methodology | Everyone; drives trust, traffic, citations |
+| Pro | Calculator with saved scenarios, alerts, larger exports | Individuals, ~$15–$30/mo |
+| Team | Workspaces, custom task weights, budget simulation, shareable reports | Teams, ~$99–$499/mo |
+| API | Read API over the open dataset at scale, plus derived endpoints | Platforms, FinOps and procurement tools |
+| Enterprise | Private-workload overlays (your bill, your evals), governance fields, custom scoring | Custom |
+
+# 18. Success Metrics
+
+| **Category** | **Metrics** |
+| --- | --- |
+| Authority / reach | Weekly visitors, model-page views, data downloads, press and newsletter citations, organic search for model cost comparisons |
+| Trust | Corrections submitted and resolved, time-to-correct, methodology-page views, repeat visits around launches |
+| Decision value | Compares run, calculator runs, value-axis switches, exports, Analyst-view opens |
+| Commercial | Free-to-Pro conversion, Pro/Team subscribers, API customers, enterprise leads |
+
+# 19. Risks and Mitigations
+
+| **Risk** | **Mitigation** |
+| --- | --- |
+| Single price source (OpenRouter outage or coverage gap) | Daily snapshots degrade gracefully to last-known with a stale flag; models absent from OpenRouter wait in the holding set rather than getting invented prices; a direct-host price reader can be added later behind the same abstraction if coverage demands. |
+| Battery run cost or refresh burden | Open-weight sweeps cost cents; frontier models are opt-in; free-tier models cost $0; runs are triggered on release/schedule, not continuously. |
+| Ungraded $/task rewards a model that bails cheaply | The adjacent Capability column is the guard; the no-grading caveat is disclosed on the methodology page; grading in V1 closes it. |
+| Token measurement varies run to run | Fix sampling (temp 0 / seed where supported); single attempt per snapshot; disclose as a dated measurement; average over runs if variance warrants (config). |
+| Capability licensing (AA) | Open-first sourcing (LMArena + open leaderboards); AA attributed-only and only if terms clear; decided in Phase 0. |
+| Capability indices drift | Version-stamp every score; warn that quality history is not continuous across revisions. |
+| Cheapest-qualifying price gamed by a degraded host | Reference-spec guard (quantization + context must qualify); reputable-host allowlist; outlier flag holds a suspiciously low price for review; full spread on the detail page. |
+| Providers object to labels | Public, sourced data; neutral rule-based labels; Overpriced defined as pure domination with a pointer to the cheaper-and-better model; public corrections process. |
+
+# 20. Decisions Log
+
+v3.1 decisions carried forward, with v4 revisions marked.
+
+| **Decision** | **Choice** | **Rationale** |
+| --- | --- | --- |
+| Goal | Authoritative cost+performance measure for corporate cost decisions | Defines audience and headline metric. |
+| Openness | Open what we own (prices + measured cost); attribute what we don't (capability) | Openness as a credibility instrument. |
+| Value metric | Cost to run a standard task | Captures token consumption; most CFO-legible. |
+| **Price sourcing [v4 REVISED]** | OpenRouter only, daily; nothing else touches price | Prices are dynamic; one daily automated feed is the only way to stay current and consistent. OpenRouter carries both proprietary (near-canonical) and open (all hosts). |
+| **Hero-metric source [v4 REVISED]** | Owned battery via OpenRouter, measured tokens incl. reasoning; AA passthrough removed | AA cost-per-task is on AA prices, Pro/Commercial-only, and public display is licensed redistribution. Measuring ourselves is cheaper, owned, license-clean, and captures reasoning burn. |
+| **Battery timing [v4 REVISED]** | Battery is the MVP hero source, not a later moat; v0 task set is a Phase-0 deliverable | Follows from the hero-metric source change. |
+| **Battery grading [v4]** | No grading at MVP; $/task measures cost only; grading → success_rate in V1 | Measuring tokens does not require judging answers; keeps the MVP battery a measurement loop. |
+| **Front door [v4 REVISED]** | Simple-first default (Model, $/task, Capability, label, Confidence); full screener behind an "Analyst view" toggle | Audience is a manager, not an analyst; preserves screener depth without making it the door. |
+| **Capability source [v4 REVISED — confirm Phase 0]** | Open-first (LMArena + open leaderboards); AA attributed-only if terms clear | AA public display is licensed redistribution; open-first keeps it free and license-clean. |
+| Positioning | "What it costs to do your job" vs AA's "who is smartest," now measured by us | Distinct job, audience, and an owned metric. |
+| Layout (Analyst) | Grouped bands, headline metrics repeated | Like sits with like. |
+| Value scoring | Log-compressed capability-per-dollar, anchored to fixed version-stamped points | Anchoring keeps historical Value comparable. |
+| Labels | Frontier-domination plane labels + Specialist overlay; market-relative | One coherent engine; Overpriced is pure domination. |
+| Roster | Rule-based: price + one capability number; auto-add; retire but keep history | Defensible, self-maintaining. |
+| Confidence & freshness | Regime→tier mapping; per-field freshness; last-checked; orthogonal | One threshold cannot fit daily and rarely-changing fields alike. |
+| Ticker | PROVIDER:MODEL-VERSION, assigned once and stable | Keeps historical snapshots joinable through renames. |
+| Success probability | None at MVP; measured by the graded battery in V1; never derived from a score | A benchmark score is not a success rate. |
+| State / publishing | JSON-in-repo daily snapshots; static-first | Free history, open data, cheap, auditable. |
+| Monetization | Open-core; never degrade the free core | The free tracker must win on its own terms. |
+
+*Chorus AI Systems — Daniel Wipert — TokenTicker Product Spec v4 — July 2026*
