@@ -47,3 +47,30 @@ Newest at the bottom.
     whether blended price uses pre- or post-discount. (Open, Block 1.2.)
   - Per-host speed/uptime is available now, so Block 1.5 can source speed from
     the endpoints feed rather than waiting on battery runs.
+- **2026-07-22** — **Block 0.5 done — the thesis holds.** `battery/run_one.py`
+  proves reasoning-token consumption is readable from OpenRouter's generation
+  endpoint. Probed three models on one reasoning prompt (~$0.0002 total):
+
+  | Model | Kind | `native_tokens_reasoning` | `total_cost` |
+  |---|---|---|---|
+  | `nvidia/nemotron-3-super-120b-a12b:free` | free reasoning | 455 | $0 |
+  | `poolside/laguna-xs-2.1` | paid reasoning | 949 | $0.00014598 |
+  | `qwen/qwen3-coder-30b-a3b-instruct` | non-reasoning | 0 | $0.00008867 |
+
+  **Locked findings (feed into schemas + battery runner):**
+  - **Use `native_tokens_*`, not `tokens_*`.** `native_*` are the provider's
+    actually-billed counts; `tokens_*` are OpenRouter's normalized GPT-tokenizer
+    counts and differ (e.g. native prompt 79 vs normalized 55). $/task must use
+    native.
+  - **Reasoning tokens are a subset of completion, not additive.** 949 reasoning
+    of 1178 completion. So `cost = (prompt + completion) × price` already includes
+    reasoning burn — do not double-count.
+  - **A10 recompute reconciles exactly.** `(77·$0.06 + 1178·$0.12)/1e6 =
+    $0.00014598` == reported `total_cost`, to the cent. The "recompute, never
+    trust the provider cost field" check works against live data.
+  - **`native_tokens_reasoning` is always present** — integer `0` on
+    non-reasoning models, never null. No missing-field handling needed.
+  - The generation record also carries `model_permaslug` (pinned, date-stamped)
+    and per-provider detail — more A12 confirmation.
+  - Set `usage:{include:true}` on the completion request to also get usage inline;
+    the generation record needs a short backoff (available within a few seconds).
