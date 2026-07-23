@@ -74,3 +74,43 @@ Newest at the bottom.
     and per-provider detail — more A12 confirmation.
   - Set `usage:{include:true}` on the completion request to also get usage inline;
     the generation record needs a short backoff (available within a few seconds).
+- **2026-07-22** — **Block 0.3 resolved — capability sourcing settled. Closes §8 / A4.**
+
+  **Decision:**
+  | Axis | Source | Access |
+  |---|---|---|
+  | Chat Elo | LMArena | Published openly |
+  | Overall / Coding / Reasoning | **Artificial Analysis Intelligence Index** (adopted wholesale, version-stamped) | **Official API only** — never website scraping |
+  | Context, modality, license | Model cards / OpenRouter metadata | — |
+
+  AA use **is permitted with attribution** for selected, API-derived figures
+  (benchmark, pricing, performance) displayed in products/charts. It is adopted
+  wholesale as a pre-composed index — consistent with the "no homemade blended
+  capability index" constraint (A4). So overall/coding/reasoning are now
+  **confirmed-and-publishable**, not data-only.
+
+  **Rules that come with the license (all mandatory):**
+  1. **Official API, cached server-side.** No scraping AA's website — permission is
+     tied to API use.
+  2. **Attribution:** a visible footer/byline — *"Model benchmark, pricing, and
+     performance data provided by Artificial Analysis"* — with **Artificial
+     Analysis** linked to their homepage.
+  3. **Precise metric identity on every figure:** index name + version + retrieval
+     date, e.g. `Artificial Analysis Intelligence Index v4.1: 42 · retrieved
+     2026-07-22`. AA changes benchmark composition between major versions; scores
+     are only comparable within a major version (this is why CapabilityScore
+     carries `index_version` + `observed_at`).
+  4. **⚠ No redistribution.** Republishing the AA dataset, a competing live
+     leaderboard, or bulk redistribution is **not** covered by attribution —
+     requires a written redistribution agreement.
+
+  **Design consequence (load-bearing):** TokenTicker's open CSV/JSON export is
+  redistribution. Therefore the export carries **owned data only** — OpenRouter
+  prices + our measured token/cost + our derived numbers — and **excludes AA-derived
+  capability figures**, linking out to AA instead of rehosting the values. Displaying
+  AA numbers on the site (attributed) is fine; putting them in the downloadable file
+  is not. Enforced in Block 2.4.
+
+  **Residual to confirm (procurement, not design):** display rights ≠ free API
+  access. Confirm which AA API tier/subscription is needed to pull the index and its
+  cost, before Block 1.5 wires the ingestion. Logged as an open item.

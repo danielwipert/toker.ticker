@@ -37,7 +37,7 @@ Build Plan v1 was written against spec v4 + the v4.1 label fix. Amendment **v4.2
 | A1 | Single unified view; dark "Analyst" theme removed | Phase 2 collapses from two view-blocks into one. `tokenticker_prototype_v3.html` is the reference (not v2). |
 | A2 | Detail page + ±5 peer rule | Block 2.3 gains the peer set, teal/slate highlighting, empty-band case. |
 | A3 | Rating engine reads unpublished axes | Reinforces Block 1.6; coding/reasoning live in the data model, not the columns. |
-| A4 | Capability sourcing still open | Block 0.3 updated: only chat-Elo + context are confirmed; overall/coding/reasoning unconfirmed. No homemade blended index. |
+| A4 | Capability sourcing ~~still open~~ **RESOLVED** | Block 0.3: LMArena Elo + **Artificial Analysis Intelligence Index** (API, attributed, version-stamped). AA displayed but not redistributed → excluded from open export. |
 | A5 | Owned battery is MVP-critical | Already true in v1; unchanged. |
 | **A6** | **Deterministic grading at MVP** | **Reverses spec v4's "no grading at MVP."** Adds a grader module; no LLM in the MVP grading path. |
 | A7 | Three MVP categories | Coding, extraction, reasoning. Summarization + long-context deferred. Headline = mean of **3**. |
@@ -105,25 +105,27 @@ Before writing any ingestion logic, look at the actual data with your own eyes.
 
 The one decision v4 deliberately left open, and v4.2 confirms is **still open** — a hard Phase 0 gate. Close it before it blocks Phase 1.
 
-> **⟳ v4.2 · A4 — current status of the capability axes:**
+> **✅ RESOLVED 2026-07-22 — see `DECISIONS.md`. Status of the capability axes:**
 >
 > | Axis | Source | Status |
 > | --- | --- | --- |
 > | Chat Elo | LMArena | **Confirmed** — published openly |
-> | Capability (overall) | — | **Unconfirmed** |
-> | Coding | — | **Unconfirmed** |
-> | Reasoning | — | **Unconfirmed** |
+> | Capability (overall) | **Artificial Analysis Intelligence Index** (API, attributed) | **Confirmed & publishable** |
+> | Coding | Artificial Analysis (API, attributed) | **Confirmed & publishable** |
+> | Reasoning | Artificial Analysis (API, attributed) | **Confirmed & publishable** |
 > | Context window | Model cards | Confirmed |
 >
-> **Constraint (retained):** TokenTicker does **not** build its own blended capability index from component benchmark scores. Capability is either sourced with attribution, or it is not published as a column.
+> **Constraint (retained):** TokenTicker does **not** build its own blended capability index. AA's Intelligence Index is adopted **wholesale**, version-stamped — which satisfies this.
+>
+> **License terms that bind the build:** official AA **API only** (no website scraping); server-side cache; visible attribution footer linking to AA; every figure stamped with index version + retrieval date; and — load-bearing — **AA figures are displayed but never redistributed**, so they are excluded from the open data export (Block 2.4).
 
-- [ ] Read Artificial Analysis's terms of use — determine whether attributed, linked citation of individual figures on a public site is permitted
-- [ ] Check LMArena's leaderboard for access: is there a downloadable/queryable source, or does it need scraping? (Elo is the one confirmed axis — nail its access path.)
-- [ ] Identify a license-clean source for overall / coding / reasoning, or accept that those columns ship without provenance and are therefore **held in data only** (they still drive the rating engine — see Block 1.6) ⟳ *v4.2 · A3*
-- [ ] Log the decision in `docs/DECISIONS.md`: which source is primary, which are complementary, whether AA appears at all
-- [ ] For whichever sources are chosen, write down their refresh cadence and known weakness (needed for the methodology page later)
+- [x] ~~Read Artificial Analysis's terms~~ → attributed, API-derived display **is** permitted; redistribution is not.
+- [ ] Confirm LMArena's Elo access path (downloadable/queryable vs. scrape)
+- [ ] **Confirm which AA API tier/subscription is required and its cost** — display rights ≠ free API access. Blocks Block 1.5 ingestion.
+- [x] ~~Decision logged in `DECISIONS.md`~~
+- [ ] Write each source's refresh cadence + known weakness for the methodology page (AA: composition drifts across major index versions → compare only within a version)
 
-**Done when:** `DECISIONS.md` names the primary capability source and its access method, with the AA question answered yes or no, and each of overall/coding/reasoning marked either *sourced-and-publishable* or *data-only*.
+**Done when:** ~~`DECISIONS.md` names the primary capability source and its access method~~ ✅ — remaining: LMArena access path confirmed and AA API tier/cost confirmed.
 
 ---
 
@@ -538,6 +540,8 @@ All deterministic Python. No LLM anywhere near these numbers.
   - [ ] If `cost-per-successful-task` is published, how it's computed; if not, why it's held ⟳ *v4.2 · A14*
 - [ ] Add the correction link on every page (opens a GitHub issue with the field pre-filled)
 - [ ] Add the CSV/JSON download of prices, measured costs, and pass rates
+- [ ] **Exclude AA-derived capability figures from the export** — it is redistribution, which AA's attribution license does not cover. Export owned data only (OpenRouter prices + measured token/cost + derived); link out to AA rather than rehosting its values. *(Block 0.3 decision)*
+- [ ] Add the AA attribution footer sitewide — *"Model benchmark, pricing, and performance data provided by Artificial Analysis"*, linking **Artificial Analysis** to their homepage; stamp each AA figure with index version + retrieval date
 - [ ] Publish the generator + grading code, and make clear what is owned data vs. attributed capability data ⟳ *v4.2 · A8*
 
 **Done when:** a stranger could read the methodology page and reproduce one model's `$/task` — including regenerating its task instances from the published seed.
